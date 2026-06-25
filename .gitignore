@@ -1,0 +1,9 @@
+build/
+logs/
+journals/
+testdir/
+.vscode/
+
+*.o
+*.out
+monitor
