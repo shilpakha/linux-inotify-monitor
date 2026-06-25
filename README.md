@@ -219,3 +219,4 @@ journals/journal_20260625.log
 ## Author
 
 Developed as a Linux System Programming and Modern C++ learning project.
+# linux-inotify-monitor
