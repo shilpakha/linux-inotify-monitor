@@ -26,5 +26,9 @@ int main(int argc, char* argv[])
 
     watcher.startWatching();
 
+    EventProcessor processor;
+
+    processor.start();
+    
     return 0;
 }

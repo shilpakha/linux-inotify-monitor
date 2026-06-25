@@ -191,9 +191,11 @@ void InotifyWatcher::startWatching()
 
                 std::cout<< ev.action<< " "<< ev.filename<< std::endl;
 
-                logger.logEvent(ev);
+                processor.pushEvent(ev);
 
-                journal.saveEvent(ev);
+                // logger.logEvent(ev);
+
+                // journal.saveEvent(ev);
             }
 
             i += sizeof(struct inotify_event) + event->len;

@@ -15,3 +15,10 @@ add_executable(
     src/Journal.cpp
     src/InotifyWatcher.cpp
 )
+
+find_package(Threads REQUIRED)
+
+target_link_libraries(
+    monitor
+    Threads::Threads
+)
