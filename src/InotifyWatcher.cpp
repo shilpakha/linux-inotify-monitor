@@ -11,13 +11,66 @@
 #include <chrono>
 #include <ctime>
 
+#include <filesystem>
+#include <unordered_map>
+
+namespace fs = std::filesystem;
 
 InotifyWatcher::InotifyWatcher(const std::string& path)
 {
     watchPath = path;
     fd = -1;
 }
+void InotifyWatcher::addWatchRecursive(const std::string& path)
+{
+    int wd = inotify_add_watch(
+        fd,
+        path.c_str(),
+        IN_CREATE |
+        IN_DELETE |
+        IN_MODIFY |
+        IN_MOVED_FROM |
+        IN_MOVED_TO
+    );
 
+    if (wd >= 0)
+    {
+        watchMap[wd] = path;
+
+        std::cout
+            << "Watching: "
+            << path
+            << std::endl;
+    }
+
+    for (const auto& entry :
+         fs::recursive_directory_iterator(path))
+    {
+        if (entry.is_directory())
+        {
+            int subWd = inotify_add_watch(
+                fd,
+                entry.path().c_str(),
+                IN_CREATE |
+                IN_DELETE |
+                IN_MODIFY |
+                IN_MOVED_FROM |
+                IN_MOVED_TO
+            );
+
+            if (subWd >= 0)
+            {
+                watchMap[subWd] =
+                    entry.path().string();
+
+                std::cout
+                    << "Watching: "
+                    << entry.path()
+                    << std::endl;
+            }
+        }
+    }
+}
 bool InotifyWatcher::initialize()
 {
     fd = inotify_init1(IN_NONBLOCK);
@@ -28,16 +81,30 @@ bool InotifyWatcher::initialize()
         return false;
     }
 
-    int wd = inotify_add_watch(fd,watchPath.c_str(),IN_CREATE |IN_DELETE |IN_DELETE_SELF |IN_MODIFY |IN_MOVED_FROM |IN_MOVED_TO);
-
-    if (wd < 0)
-    {
-        std::cerr << "Failed to add watch\n";
-        return false;
-    }
+    addWatchRecursive(watchPath);
 
     return true;
 }
+// bool InotifyWatcher::initialize()
+// {
+//     fd = inotify_init1(IN_NONBLOCK);
+
+//     if (fd < 0)
+//     {
+//         std::cerr << "Failed to initialize inotify\n";
+//         return false;
+//     }
+
+//     int wd = inotify_add_watch(fd,watchPath.c_str(),IN_CREATE |IN_DELETE |IN_DELETE_SELF |IN_MODIFY |IN_MOVED_FROM |IN_MOVED_TO);
+
+//     if (wd < 0)
+//     {
+//         std::cerr << "Failed to add watch\n";
+//         return false;
+//     }
+
+//     return true;
+// }
 
 void InotifyWatcher::startWatching()
 {
@@ -70,8 +137,21 @@ void InotifyWatcher::startWatching()
 
                 Event ev;
 
-                ev.filename = event->name;
+                if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR))
+                {
+                    std::string parent = watchMap[event->wd];
 
+                    std::string newDir = parent + "/" + event->name;
+
+                    addWatchRecursive(newDir);
+
+                    std::cout<< "New directory added: "<< newDir<< std::endl;
+                }
+
+                // ev.filename = event->name;
+
+                ev.filename = watchMap[event->wd] + "/" + event->name;
+                
                 if (event->mask & IN_CREATE)
                 {
                     ev.action = "CREATED";
