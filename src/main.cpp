@@ -1,4 +1,6 @@
 #include "../include/InotifyWatcher.h"
+#include "../include/EventProcessor.h"
+#include "SignalHandler.h"
 
 #include <iostream>
 
@@ -24,11 +26,13 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    setupSignalHandler();
+
     watcher.startWatching();
 
     EventProcessor processor;
 
     processor.start();
-    
+
     return 0;
 }

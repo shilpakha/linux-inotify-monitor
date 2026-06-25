@@ -14,6 +14,8 @@ add_executable(
     src/Logger.cpp
     src/Journal.cpp
     src/InotifyWatcher.cpp
+    src/SignalHandler.cpp
+    src/EventProcessor.cpp
 )
 
 find_package(Threads REQUIRED)

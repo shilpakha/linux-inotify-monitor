@@ -8,7 +8,8 @@ class InotifyWatcher
 {
 public:
     InotifyWatcher(const std::string& path);
-
+    ~InotifyWatcher();
+    
     bool initialize();
 
     void startWatching();

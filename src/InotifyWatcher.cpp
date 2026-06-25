@@ -1,5 +1,6 @@
 #include "../include/InotifyWatcher.h"
-
+#include "../include/EventProcessor.h"
+#include "../include/SignalHandler.h"
 #include "../include/Event.h"
 #include "../include/Logger.h"
 #include "../include/Journal.h"
@@ -21,6 +22,15 @@ InotifyWatcher::InotifyWatcher(const std::string& path)
     watchPath = path;
     fd = -1;
 }
+
+InotifyWatcher::~InotifyWatcher()
+{
+    if(fd >= 0)
+    {
+        close(fd);
+    }
+}
+
 void InotifyWatcher::addWatchRecursive(const std::string& path)
 {
     int wd = inotify_add_watch(
@@ -110,12 +120,13 @@ void InotifyWatcher::startWatching()
 {
     Logger logger("../logs/app.log");
     Journal journal("../journals");
+    
 
     char buffer[4096];
 
     std::cout<< "Watching: "<< watchPath<< std::endl;
 
-    while (true)
+    while(running)
     {
         int length = read(fd,buffer, sizeof(buffer));
 
@@ -136,6 +147,8 @@ void InotifyWatcher::startWatching()
                 std::cout << "Mask: " << event->mask << std::endl;
 
                 Event ev;
+
+                EventProcessor processor;
 
                 if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR))
                 {
@@ -201,4 +214,7 @@ void InotifyWatcher::startWatching()
             i += sizeof(struct inotify_event) + event->len;
         }
     }
+    std::cout<< "Stopping monitor..."<< std::endl;
+
+    close(fd);
 }
